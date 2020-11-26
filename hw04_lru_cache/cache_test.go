@@ -50,13 +50,50 @@ func TestCache(t *testing.T) {
 	})
 
 	t.Run("purge logic", func(t *testing.T) {
-		// Write me
+
+		// - на логику выталкивания элементов из-за размера очереди
+		// (например: n = 3, добавили 4 элемента - 1й из кэша вытолкнулся);
+		c := NewCache(3)
+
+		_ = c.Set("aaa", 100)
+		_ = c.Set("bbb", 200)
+		_ = c.Set("ccc", 300)
+		_ = c.Set("ddd", 400)
+
+		val, ok := c.Get("aaa")
+		require.False(t, ok)
+		require.Nil(t, val)
+
+		val, ok = c.Get("ddd")
+		require.True(t, ok)
+		require.Equal(t, 400, val)
+
+		// заодно проверим очистку
+		c.Clear()
+
+		val, ok = c.Get("bbb")
+		require.False(t, ok)
+		require.Equal(t, nil, val)
+
+		// - на логику выталкивания редкоиспользуемых элементов
+		// (например: n = 3, добавили 3 элемента, обратились много раз к разным элементам:
+		// изменили значение, получили значение и пр. - добавили 4й элемент,
+		// из первой тройки вытолкнулся наименее используемый).
+
+		_ = c.Set("aaa", 100)
+		_ = c.Set("bbb", 200)
+		_ = c.Set("ccc", 300)
+		_, _ = c.Get("aaa")
+		_, _ = c.Get("bbb")
+		_ = c.Set("ddd", 400)
+
+		val, ok = c.Get("ccc")
+		require.False(t, ok)
+		require.Equal(t, nil, val)
 	})
 }
 
 func TestCacheMultithreading(t *testing.T) {
-	t.Skip() // NeedRemove if task with asterisk completed
-
 	c := NewCache(10)
 	wg := &sync.WaitGroup{}
 	wg.Add(2)
