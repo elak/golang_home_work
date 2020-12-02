@@ -1,6 +1,7 @@
 package hw02_unpack_string //nolint:golint,stylecheck
 
 import (
+	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -45,16 +46,31 @@ func TestUnpack(t *testing.T) {
 			input:    "aaa0b",
 			expected: "aab",
 		},
+		{
+			input:    "🐈3",
+			expected: "🐈🐈🐈",
+		},
+		{
+			input:    "🐈2🦉",
+			expected: "🐈🐈🦉",
+		},
+		{
+			input:    "\u65e5本5\U00008a9e",
+			expected: "\u65e5本本本本本\U00008a9e",
+		},
+		// Потребуется нормализация уникода, и это будет уже не распаковка, а совсем наоборот
+		// {
+		// 	input:    "\U00000438\U000003062",
+		// 	expected: "йй",
+		// },
 	} {
 		result, err := Unpack(tst.input)
-		require.Equal(t, tst.err, err)
-		require.Equal(t, tst.expected, result)
+		require.Equal(t, tst.err, err, fmt.Sprintf("Error unpacking '%s'", tst.input))
+		require.Equal(t, tst.expected, result, fmt.Sprintf("Error unpacking '%s'", tst.input))
 	}
 }
 
 func TestUnpackWithEscape(t *testing.T) {
-	t.Skip() // NeedRemove if task with asterisk completed
-
 	for _, tst := range [...]test{
 		{
 			input:    `qwe\4\5`,
@@ -72,9 +88,23 @@ func TestUnpackWithEscape(t *testing.T) {
 			input:    `qwe\\\3`,
 			expected: `qwe\3`,
 		},
+		{
+			input:    `\qwe`,
+			expected: `qwe`,
+		},
+		{
+			input:    `\`,
+			expected: "",
+			err:      ErrInvalidString,
+		},
+		{
+			input:    `qwe\\\3\`,
+			expected: "",
+			err:      ErrInvalidString,
+		},
 	} {
 		result, err := Unpack(tst.input)
-		require.Equal(t, tst.err, err)
-		require.Equal(t, tst.expected, result)
+		require.Equal(t, tst.err, err, fmt.Sprintf("Error unpacking '%s'", tst.input))
+		require.Equal(t, tst.expected, result, fmt.Sprintf("Error unpacking '%s'", tst.input))
 	}
 }
