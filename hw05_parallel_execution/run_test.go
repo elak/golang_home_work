@@ -54,6 +54,13 @@ func TestRun(t *testing.T) {
 
 		require.Equal(t, ErrErrorsLimitExceeded, result)
 		require.LessOrEqual(t, runTasksCount, int32(workersCount+maxErrorsCount), "extra tasks were started")
+
+		runTasksCount = 0
+		result = Run(make([]Task, 0), workersCount, maxErrorsCount)
+
+		require.Nil(t, result)
+		require.Equal(t, runTasksCount, int32(0))
+
 	})
 
 	t.Run("tasks without errors", func(t *testing.T) {
