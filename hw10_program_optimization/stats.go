@@ -1,11 +1,11 @@
 package hw10_program_optimization //nolint:golint,stylecheck
 
 import (
+	"bufio"
+	"bytes"
 	"encoding/json"
-	"fmt"
+	"errors"
 	"io"
-	"io/ioutil"
-	"regexp"
 	"strings"
 )
 
@@ -19,49 +19,61 @@ type User struct {
 	Address  string
 }
 
+var (
+	ErrNilInput = errors.New("nil input")
+)
+
 type DomainStat map[string]int
 
 func GetDomainStat(r io.Reader, domain string) (DomainStat, error) {
-	u, err := getUsers(r)
-	if err != nil {
-		return nil, fmt.Errorf("get users error: %s", err)
-	}
-	return countDomains(u, domain)
-}
-
-type users [100_000]User
-
-func getUsers(r io.Reader) (result users, err error) {
-	content, err := ioutil.ReadAll(r)
-	if err != nil {
-		return
+	if r == nil {
+		return nil, ErrNilInput
 	}
 
-	lines := strings.Split(string(content), "\n")
-	for i, line := range lines {
-		var user User
-		if err = json.Unmarshal([]byte(line), &user); err != nil {
-			return
-		}
-		result[i] = user
-	}
-	return
-}
-
-func countDomains(u users, domain string) (DomainStat, error) {
 	result := make(DomainStat)
 
-	for _, user := range u {
-		matched, err := regexp.Match("\\."+domain, []byte(user.Email))
+	domain = "." + domain
+	domainCheck := domain + `"`
+
+	reader := bufio.NewReader(r)
+
+	var buffer bytes.Buffer
+	var user User
+	isEOF := false
+
+	for !isEOF {
+		line, isPrefix, err := reader.ReadLine()
+
 		if err != nil {
-			return nil, err
+			// дочитали до конца файла, не встретив конец строки?
+			if errors.Is(err, io.EOF) {
+				isPrefix = false
+				isEOF = true
+			} else {
+				return nil, err
+			}
 		}
 
-		if matched {
-			num := result[strings.ToLower(strings.SplitN(user.Email, "@", 2)[1])]
-			num++
-			result[strings.ToLower(strings.SplitN(user.Email, "@", 2)[1])] = num
+		buffer.Write(line)
+
+		// собрали строку полностью?
+		if isPrefix {
+			continue
 		}
+
+		// Если в строке нет даже намёка на искомый домен - более затратные операции не нужны
+		if strings.Contains(buffer.String(), domainCheck) {
+			if err := json.Unmarshal(buffer.Bytes(), &user); err == nil {
+				// Быстра проверка домена нашла его именно в почте?
+				if strings.HasSuffix(user.Email, domain) {
+					atPos := strings.Index(user.Email, "@")
+					result[strings.ToLower(user.Email[atPos+1:])]++
+				}
+			}
+		}
+
+		buffer.Reset()
 	}
+
 	return result, nil
 }
