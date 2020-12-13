@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	"io"
 	"io/ioutil"
 	"net"
 	"sync"
@@ -31,7 +32,15 @@ func TestTelnetClient(t *testing.T) {
 
 			client := NewTelnetClient(l.Addr().String(), timeout, ioutil.NopCloser(in), out)
 			require.NoError(t, client.Connect())
-			defer func() { require.NoError(t, client.Close()) }()
+
+			// повторное соединение должно дать ошибку
+			require.Error(t, ErrorAlreadyConnected, client.Connect())
+
+			defer func() {
+				require.NoError(t, client.Close())
+				// повторное закрытие к ошибке не приводит
+				require.NoError(t, client.Close())
+			}()
 
 			in.WriteString("hello\n")
 			err = client.Send()
@@ -40,6 +49,14 @@ func TestTelnetClient(t *testing.T) {
 			err = client.Receive()
 			require.NoError(t, err)
 			require.Equal(t, "world\n", out.String())
+
+			// проверка на получение EOF для потока ввода
+			err = client.Send()
+			require.Error(t, io.EOF, err)
+
+			// проверка на получение EOF при закрытии соединения
+			err = client.Receive()
+			require.Error(t, io.EOF, err)
 		}()
 
 		go func() {
@@ -61,5 +78,12 @@ func TestTelnetClient(t *testing.T) {
 		}()
 
 		wg.Wait()
+	})
+
+	t.Run("not connected", func(t *testing.T) {
+		client := NewTelnetClient("localhost:123", 10*time.Second, nil, nil)
+		require.Error(t, ErrorNotConnected, client.Send())
+		require.Error(t, ErrorNotConnected, client.Receive())
+		require.NoError(t, client.Close())
 	})
 }
