@@ -36,4 +36,62 @@ func TestGetDomainStat(t *testing.T) {
 		require.NoError(t, err)
 		require.Equal(t, DomainStat{}, result)
 	})
+
+	t.Run("nil input", func(t *testing.T) {
+		result, err := GetDomainStat(nil, "unknown")
+		require.Equal(t, ErrNilInput, err)
+		require.Nil(t, result)
+	})
+
+	t.Run("empty input", func(t *testing.T) {
+		result, err := GetDomainStat(bytes.NewBufferString(""), "tv")
+		require.NoError(t, err)
+		require.Equal(t, DomainStat{}, result)
+	})
+
+	t.Run("false domain 1", func(t *testing.T) {
+		data := `{"Id":1,"Name":"Howard Mendoza","Username":"0Oliver.tv","Email":"aliquid_qui_ea@Browsedrive.gov","Phone":"6-866-899-36-79","Password":"InAQJvsq","Address":"Blackbird Place 25"}`
+		result, err := GetDomainStat(bytes.NewBufferString(data), "tv")
+		require.NoError(t, err)
+		require.Equal(t, DomainStat{}, result)
+	})
+
+	t.Run("false domain 2", func(t *testing.T) {
+		data := `{"Id":1,"Name":"Howard Mendoza","Username":"0Oliver","Email":"aliquid_qui_ea@Browsedrive.gov","Phone":"6-866-899-36-79","Password":"InAQJvsq.tv","Address":"Blackbird Place 25"}`
+		result, err := GetDomainStat(bytes.NewBufferString(data), "tv")
+		require.NoError(t, err)
+		require.Equal(t, DomainStat{}, result)
+	})
+
+	t.Run("false domain - true domain", func(t *testing.T) {
+		data := `{"Id":1,"Name":"Howard Mendoza","Username":"0Oliver.tv","Email":"aliquid_qui_ea@Browsedrive.tv","Phone":"6-866-899-36-79","Password":"InAQJvsq","Address":"Blackbird Place 25"}`
+		result, err := GetDomainStat(bytes.NewBufferString(data), "tv")
+		require.NoError(t, err)
+		require.Equal(t, DomainStat{
+			"browsedrive.tv": 1,
+		}, result)
+	})
+
+	t.Run("true domain - false domain", func(t *testing.T) {
+		data := `{"Id":1,"Name":"Howard Mendoza","Username":"0Oliver","Email":"aliquid_qui_ea@Browsedrive.tv","Phone":"6-866-899-36-79","Password":"InAQJvsq.tv","Address":"Blackbird Place 25"}`
+		result, err := GetDomainStat(bytes.NewBufferString(data), "tv")
+		require.NoError(t, err)
+		require.Equal(t, DomainStat{
+			"browsedrive.tv": 1,
+		}, result)
+	})
+
+	t.Run("no mail field", func(t *testing.T) {
+		data := `{"Id":1,"Name":"Howard Mendoza","Username":"0Oliver.tv","Phone":"6-866-899-36-79","Password":"InAQJvsq","Address":"Blackbird Place 25"}`
+		result, err := GetDomainStat(bytes.NewBufferString(data), "tv")
+		require.NoError(t, err)
+		require.Equal(t, DomainStat{}, result)
+	})
+
+	t.Run("sub domain", func(t *testing.T) {
+		data := `{"Id":1,"Name":"Howard Mendoza","Username":"0Oliver.tv","Email":"aliquid_qui_ea@Browsedrive.tv.co.uk","Phone":"6-866-899-36-79","Password":"InAQJvsq.tv","Address":"Blackbird Place 25"}`
+		result, err := GetDomainStat(bytes.NewBufferString(data), "tv")
+		require.NoError(t, err)
+		require.Equal(t, DomainStat{}, result)
+	})
 }
