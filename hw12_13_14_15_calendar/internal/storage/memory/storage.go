@@ -1,6 +1,9 @@
 package memorystorage
 
-import "sync"
+import (
+	"github.com/elak/golang_home_work/hw12_13_14_15_calendar/internal/storage"
+	"sync"
+)
 
 type Storage struct {
 	// TODO
@@ -9,6 +12,11 @@ type Storage struct {
 
 func New() *Storage {
 	return &Storage{}
+}
+
+func (s *Storage) CreateEvent(event storage.Event) error {
+	// TODO
+	return nil
 }
 
 // TODO

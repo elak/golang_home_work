@@ -1,6 +1,9 @@
 package sqlstorage
 
-import "context"
+import (
+	"context"
+	"github.com/elak/golang_home_work/hw12_13_14_15_calendar/internal/storage"
+)
 
 type Storage struct {
 	// TODO
@@ -8,6 +11,11 @@ type Storage struct {
 
 func New() *Storage {
 	return &Storage{}
+}
+
+func (s *Storage) CreateEvent(event storage.Event) error {
+	// TODO
+	return nil
 }
 
 func (s *Storage) Connect(ctx context.Context) error {

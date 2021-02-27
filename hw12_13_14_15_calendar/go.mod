@@ -1,3 +1,5 @@
-module github.com/fixme_my_friend/hw12_13_14_15_calendar
+module github.com/elak/golang_home_work/hw12_13_14_15_calendar
 
-go 1.16
+go 1.15
+
+require github.com/BurntSushi/toml v0.3.1 // indirect

@@ -1,5 +1,9 @@
 [logger]
 level = "INFO"
 
+[storage]
+type = "mem"
+type2 = "sql"
+
 # TODO
 # ...
