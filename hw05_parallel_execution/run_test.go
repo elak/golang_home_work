@@ -35,6 +35,32 @@ func TestRun(t *testing.T) {
 
 		require.Equal(t, ErrErrorsLimitExceeded, result)
 		require.LessOrEqual(t, runTasksCount, int32(workersCount+maxErrorsCount), "extra tasks were started")
+
+		// крайние значения параметров
+
+		workersCount = 1   // один поток
+		maxErrorsCount = 0 // до первой ошибки
+		runTasksCount = 0
+		result = Run(tasks, workersCount, maxErrorsCount)
+
+		require.Equal(t, ErrErrorsLimitExceeded, result)
+		require.Equal(t, runTasksCount, int32(1))
+
+		// работников больше, чем работы
+		workersCount = tasksCount + 10
+		maxErrorsCount = 23
+		runTasksCount = 0
+		result = Run(tasks, workersCount, maxErrorsCount)
+
+		require.Equal(t, ErrErrorsLimitExceeded, result)
+		require.LessOrEqual(t, runTasksCount, int32(workersCount+maxErrorsCount), "extra tasks were started")
+
+		runTasksCount = 0
+		result = Run(make([]Task, 0), workersCount, maxErrorsCount)
+
+		require.Nil(t, result)
+		require.Equal(t, runTasksCount, int32(0))
+
 	})
 
 	t.Run("tasks without errors", func(t *testing.T) {
@@ -65,5 +91,15 @@ func TestRun(t *testing.T) {
 
 		require.Equal(t, runTasksCount, int32(tasksCount), "not all tasks were completed")
 		require.LessOrEqual(t, int64(elapsedTime), int64(sumTime/2), "tasks were run sequentially?")
+
+		runTasksCount = 0
+		tasks[20] = nil
+		tasks = append(tasks, nil)
+		tasks = append(tasks, nil)
+
+		result = Run(tasks, workersCount, maxErrorsCount)
+		require.Nil(t, result)
+		require.Equal(t, runTasksCount, int32(tasksCount-1), "not all tasks were completed")
+
 	})
 }
