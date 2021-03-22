@@ -8,24 +8,21 @@ import (
 
 type App struct {
 	logger  Logger
-	storage Storage
-	// TODO
+	storage storage.Storage
 }
 
-type Logger interface { // TODO
+type Logger interface {
+	LogMessage(msg string, msgLevel int8)
+	Error(msg string)
+	Warning(msg string)
+	Info(msg string)
+	Debug(msg string)
 }
 
-type Storage interface {
-	CreateEvent(event storage.Event) error
-	// TODO
-}
-
-func New(logger Logger, storage Storage) *App {
+func New(logger Logger, storage storage.Storage) *App {
 	return &App{logger, storage}
 }
 
 func (a *App) CreateEvent(ctx context.Context, id string, title string) error {
-	return a.storage.CreateEvent(storage.Event{ID: id, Title: title})
+	return a.storage.CreateEvent(ctx, storage.Event{ID: id, Title: title})
 }
-
-// TODO

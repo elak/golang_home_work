@@ -11,7 +11,7 @@ import (
 	"github.com/elak/golang_home_work/hw12_13_14_15_calendar/internal/app"
 	"github.com/elak/golang_home_work/hw12_13_14_15_calendar/internal/logger"
 	internalhttp "github.com/elak/golang_home_work/hw12_13_14_15_calendar/internal/server/http"
-	memorystorage "github.com/elak/golang_home_work/hw12_13_14_15_calendar/internal/storage/memory"
+	internalstorage "github.com/elak/golang_home_work/hw12_13_14_15_calendar/internal/storage/common"
 )
 
 var configFile string
@@ -28,19 +28,31 @@ func main() {
 		return
 	}
 
-	config, err := NewConfig()
+	ret := run() //nolint:ifshort
 
+	if ret != 0 {
+		os.Exit(ret)
+	}
+}
+
+func run() int {
+	config, err := NewConfig()
 	if err != nil {
-		//logger.Error("failed to start http server: " + err.Error())
-		os.Exit(1)
+		return 1
 	}
 
-	logg := logger.New(config.Logger.Level)
+	err = logger.Start(config.Logger.Level, config.Logger.Path)
+	if err != nil {
+		os.Exit(1)
+	}
+	defer logger.Stop()
 
-	storage := memorystorage.New()
-	calendar := app.New(logg, storage)
+	storage := internalstorage.New(config.Storage.Type)
 
-	server := internalhttp.NewServer(calendar)
+	calendar := app.New(logger.GetDefaultLogger(), storage)
+
+	server := internalhttp.NewServer(calendar, config.Server.Host, config.Server.Port)
+
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
@@ -61,15 +73,24 @@ func main() {
 		defer cancel()
 
 		if err := server.Stop(ctx); err != nil {
-			logger.Error("failed to stop http server: " + err.String())
+			logger.Error("failed to stop http server: " + err.Error())
 		}
 	}()
 
-	logg.Info("calendar is running...")
+	err = storage.Connect(ctx, config.Storage.URI)
+	if err != nil {
+		logger.Error("failed to connect storage: " + err.Error())
+		return 1
+	}
+
+	defer storage.Close(ctx)
+
+	logger.Info("calendar is running...")
 
 	if err := server.Start(ctx); err != nil {
-		logger.Error("failed to start http server: " + err.String())
-		cancel()
-		os.Exit(1) //nolint:gocritic
+		logger.Error("failed to start http server: " + err.Error())
+		return 1
 	}
+
+	return 0
 }

@@ -2,8 +2,11 @@
 level = "INFO"
 
 [storage]
-type = "mem"
-type2 = "sql"
+type = "memory"
+#type = "sql"
+#URI ="mysqluser:mysqlpass@mysqlurl/mysqldb"
 
-# TODO
-# ...
+
+[server]
+host = ""
+port = "8181"
