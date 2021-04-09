@@ -8,16 +8,16 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/fixme_my_friend/hw12_13_14_15_calendar/internal/app"
-	"github.com/fixme_my_friend/hw12_13_14_15_calendar/internal/logger"
-	internalhttp "github.com/fixme_my_friend/hw12_13_14_15_calendar/internal/server/http"
-	memorystorage "github.com/fixme_my_friend/hw12_13_14_15_calendar/internal/storage/memory"
+	"github.com/elak/golang_home_work/hw12_13_14_15_calendar/internal/app"
+	"github.com/elak/golang_home_work/hw12_13_14_15_calendar/internal/logger"
+	internalhttp "github.com/elak/golang_home_work/hw12_13_14_15_calendar/internal/server/http"
+	internalstorage "github.com/elak/golang_home_work/hw12_13_14_15_calendar/internal/storage/common"
 )
 
 var configFile string
 
 func init() {
-	flag.StringVar(&configFile, "config", "/etc/calendar/config.toml", "Path to configuration file")
+	flag.StringVar(&configFile, "config", "configs/config.toml", "Path to configuration file")
 }
 
 func main() {
@@ -28,13 +28,31 @@ func main() {
 		return
 	}
 
-	config := NewConfig()
-	logg := logger.New(config.Logger.Level)
+	ret := run() //nolint:ifshort
 
-	storage := memorystorage.New()
-	calendar := app.New(logg, storage)
+	if ret != 0 {
+		os.Exit(ret)
+	}
+}
 
-	server := internalhttp.NewServer(calendar)
+func run() int {
+	config, err := NewConfig()
+	if err != nil {
+		return 1
+	}
+
+	err = logger.Start(config.Logger.Level, config.Logger.Path)
+	if err != nil {
+		os.Exit(1)
+	}
+	defer logger.Stop()
+
+	storage := internalstorage.New(config.Storage.Type)
+
+	calendar := app.New(logger.GetDefaultLogger(), storage)
+
+	server := internalhttp.NewServer(calendar, config.Server.Host, config.Server.Port)
+
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
@@ -55,15 +73,24 @@ func main() {
 		defer cancel()
 
 		if err := server.Stop(ctx); err != nil {
-			logg.Error("failed to stop http server: " + err.Error())
+			logger.Error("failed to stop http server: " + err.Error())
 		}
 	}()
 
-	logg.Info("calendar is running...")
+	err = storage.Connect(ctx, config.Storage.URI)
+	if err != nil {
+		logger.Error("failed to connect storage: " + err.Error())
+		return 1
+	}
+
+	defer storage.Close(ctx)
+
+	logger.Info("calendar is running...")
 
 	if err := server.Start(ctx); err != nil {
-		logg.Error("failed to start http server: " + err.Error())
-		cancel()
-		os.Exit(1) //nolint:gocritic
+		logger.Error("failed to start http server: " + err.Error())
+		return 1
 	}
+
+	return 0
 }

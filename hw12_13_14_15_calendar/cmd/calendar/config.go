@@ -1,20 +1,43 @@
 package main
 
-// При желании конфигурацию можно вынести в internal/config.
-// Организация конфига в main принуждает нас сужать API компонентов, использовать
-// при их конструировании только необходимые параметры, а также уменьшает вероятность циклической зависимости.
-type Config struct {
-	Logger LoggerConf
-	// TODO
-}
+import (
+	"os"
 
-type LoggerConf struct {
+	"github.com/BurntSushi/toml"
+)
+
+type loggerConfig struct {
 	Level string
-	// TODO
+	Path  string
 }
 
-func NewConfig() Config {
-	return Config{}
+type storageConfig struct {
+	Type string
+	URI  string
 }
 
-// TODO
+type httpConfig struct {
+	Host string
+	Port string
+}
+
+type Config struct {
+	Logger  loggerConfig
+	Storage storageConfig
+	Server  httpConfig
+}
+
+func NewConfig() (*Config, error) {
+	_, err := os.Stat(configFile)
+	if err != nil {
+		return nil, err
+	}
+
+	cfg := Config{}
+
+	if _, err := toml.DecodeFile(configFile, &cfg); err != nil {
+		return nil, err
+	}
+
+	return &cfg, nil
+}

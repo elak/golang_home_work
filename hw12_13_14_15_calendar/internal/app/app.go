@@ -2,25 +2,27 @@ package app
 
 import (
 	"context"
+
+	"github.com/elak/golang_home_work/hw12_13_14_15_calendar/internal/storage"
 )
 
-type App struct { // TODO
+type App struct {
+	logger  Logger
+	storage storage.Storage
 }
 
-type Logger interface { // TODO
+type Logger interface {
+	LogMessage(msg string, msgLevel int8)
+	Error(msg string)
+	Warning(msg string)
+	Info(msg string)
+	Debug(msg string)
 }
 
-type Storage interface { // TODO
+func New(logger Logger, storage storage.Storage) *App {
+	return &App{logger, storage}
 }
 
-func New(logger Logger, storage Storage) *App {
-	return &App{}
+func (a *App) CreateEvent(ctx context.Context, id string, title string) error {
+	return a.storage.CreateEvent(ctx, storage.Event{ID: id, Title: title})
 }
-
-func (a *App) CreateEvent(ctx context.Context, id, title string) error {
-	// TODO
-	return nil
-	// return a.storage.CreateEvent(storage.Event{ID: id, Title: title})
-}
-
-// TODO

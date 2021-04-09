@@ -1,5 +1,12 @@
 [logger]
 level = "INFO"
 
-# TODO
-# ...
+[storage]
+type = "memory"
+#type = "sql"
+#URI ="mysqluser:mysqlpass@mysqlurl/mysqldb"
+
+
+[server]
+host = ""
+port = "8181"
