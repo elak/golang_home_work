@@ -1,0 +1,11 @@
+[logger]
+level = "INFO"
+
+[storage]
+type = "mysql"
+URI ="mysqluser:mysqlpass@mysqlurl/mysqldb"
+
+
+[server]
+host = ""
+port = "8181"
