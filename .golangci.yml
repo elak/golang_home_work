@@ -28,7 +28,7 @@ linters:
     - depguard
     - dogsled
     - dupl
-    - durationcheck
+#    - durationcheck
     - errorlint
     - exportloopref
     - funlen
@@ -48,7 +48,7 @@ linters:
     - gosec
     - gosimple
     - govet
-    - ifshort
+#    - ifshort
     - ineffassign
     - interfacer
     - maligned
@@ -57,7 +57,7 @@ linters:
     - noctx
     - nolintlint
     - prealloc
-    - predeclared
+#    - predeclared
     - rowserrcheck
     - scopelint
     - sqlclosecheck
